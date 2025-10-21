@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Status Tracker</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 400px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .status-card {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .available { 
+            border-left: 5px solid #28a745;
+            background: #f8fff9;
+        }
+        .borrowed { 
+            border-left: 5px solid #dc3545;
+            background: #fff8f8;
+        }
+        .usb-id { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #333; 
+            margin-bottom: 15px;
+        }
+        .status { 
+            font-size: 20px; 
+            font-weight: bold; 
+            margin: 15px 0;
+        }
+        .available .status { color: #28a745; }
+        .borrowed .status { color: #dc3545; }
+        button { 
+            background: #28a745; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 USB Status Check</h1>
+        <p>Scan a USB QR code to check availability</p>
+        
+        <div id="status-display">
+            <div class="status-card">
+                <div class="status">Ready to Scan</div>
+                <p>Click the button below to start</p>
+            </div>
+        </div>
+        
+        <button onclick="startScanner()">📷 Scan QR Code</button>
+        <div id="reader" style="display: none; margin: 20px 0;"></div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script>
+        let html5QrCode;
+        
+        // Sample data - you can update this
+        const usbStatus = {
+            "USB-001": { status: "available", lastBorrower: "John Doe" },
+            "USB-002": { status: "borrowed", borrower: "Jane Smith", borrowDate: "2024-01-10" },
+            "USB-003": { status: "available", lastBorrower: "Mike Johnson" }
+        };
+
+        function showStatus(usbId) {
+            const statusDisplay = document.getElementById('status-display');
+            const usbData = usbStatus[usbId];
+            
+            if (!usbData) {
+                statusDisplay.innerHTML = `
+                    <div class="status-card">
+                        <div class="usb-id">${usbId}</div>
+                        <div class="status" style="color: #ffc107;">Not Found</div>
+                        <p>USB not registered in system</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (usbData.status === 'available') {
+                statusDisplay.innerHTML = `
+                    <div class="status-card available">
+                        <div class="usb-id">${usbId}</div>
+                        <div class="status">✅ AVAILABLE</div>
+                        <p>Last borrowed by: ${usbData.lastBorrower}</p>
+                        <p style="color: #28a745; font-weight: bold;">Ready to borrow!</p>
+                    </div>
+                `;
+            } else {
+                statusDisplay.innerHTML = `
+                    <div class="status-card borrowed">
+                        <div class="usb-id">${usbId}</div>
+                        <div class="status">⏳ BORROWED</div>
+                        <p>Currently with: ${usbData.borrower}</p>
+                        <p>Since: ${usbData.borrowDate}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function startScanner() {
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+                document.getElementById('reader').style.display = 'block';
+                
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 250 },
+                    onScanSuccess
+                );
+            } catch (err) {
+                alert('Camera error: ' + err.message);
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            if (html5QrCode) {
+                html5QrCode.stop();
+                document.getElementById('reader').style.display = 'none';
+            }
+            showStatus(decodedText);
+        }
+
+        // Check URL for USB ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const usbId = urlParams.get('usb');
+        if (usbId) {
+            showStatus(usbId);
+        }
+    </script>
+</body>
+</html>
