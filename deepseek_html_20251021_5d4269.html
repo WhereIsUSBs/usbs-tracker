@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Status Check</title>
+    <style>
+        body { font-family: Arial; max-width: 400px; margin: 0 auto; padding: 20px; text-align: center; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status-card { padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .available { border-left: 4px solid #28a745; background: #f8fff9; }
+        .borrowed { border-left: 4px solid #dc3545; background: #fff8f8; }
+        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 USB Status</h1>
+        <button onclick="startScanner()">📷 Scan QR Code</button>
+        <div id="reader" style="display: none; margin: 20px 0;"></div>
+        <div id="status"></div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script>
+        const usbStatus = {
+            "USB-001": { status: "available", lastBorrower: "John Doe" },
+            "USB-002": { status: "borrowed", borrower: "Jane Smith" }
+        };
+
+        function showStatus(usbId) {
+            const data = usbStatus[usbId];
+            const statusDiv = document.getElementById('status');
+            
+            if (!data) {
+                statusDiv.innerHTML = `<div class="status-card"><h3>${usbId}</h3><p>Not registered</p></div>`;
+                return;
+            }
+
+            if (data.status === 'available') {
+                statusDiv.innerHTML = `<div class="status-card available"><h3>${usbId}</h3><p>✅ AVAILABLE</p><p>Last: ${data.lastBorrower}</p></div>`;
+            } else {
+                statusDiv.innerHTML = `<div class="status-card borrowed"><h3>${usbId}</h3><p>⏳ BORROWED</p><p>By: ${data.borrower}</p></div>`;
+            }
+        }
+
+        async function startScanner() {
+            const html5QrCode = new Html5Qrcode("reader");
+            document.getElementById('reader').style.display = 'block';
+            
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    html5QrCode.stop();
+                    document.getElementById('reader').style.display = 'none';
+                    showStatus(decodedText);
+                }
+            );
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const usbId = urlParams.get('usb');
+        if (usbId) showStatus(usbId);
+    </script>
+</body>
+</html>
